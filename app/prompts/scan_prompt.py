@@ -8,20 +8,16 @@ Jangan memberikan prediksi pasti. Gunakan probabilitas berdasarkan data.
 Data (JSON):
 {json.dumps(data, ensure_ascii=False, indent=2, default=str)}
 
-Berikan hasil ringkas dalam format:
-Kode Saham:
-Trend:
-Volume:
-Teknikal:
-Fundamental:
-Sentimen:
-Support:
-Resistance:
-Sinyal:
-Risiko:
-Kesimpulan:
-Confidence Level:
-
-Sinyal hanya: BUY, BUY ON WEAKNESS, BUY ON BREAKOUT, HOLD, WATCHLIST, AVOID.
-Tambahkan disclaimer bahwa hasil bukan ajakan beli/jual."""
-
+Kembalikan HANYA objek JSON valid tanpa markdown dengan struktur:
+{{
+  "stock_code": "{data["stock"]["code"]}",
+  "trend": "ringkasan trend",
+  "volume": "ringkasan volume",
+  "technical": "ringkasan teknikal termasuk support/resistance",
+  "fundamental": "ringkasan fundamental",
+  "sentiment": "ringkasan sentimen",
+  "risks": ["risiko utama"],
+  "signal": "BUY|BUY ON WEAKNESS|BUY ON BREAKOUT|HOLD|WATCHLIST|AVOID",
+  "confidence": "Low|Medium|High",
+  "conclusion": "alasan singkat"
+}}"""

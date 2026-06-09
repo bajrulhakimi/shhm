@@ -1,0 +1,8 @@
+[Unit]
+Description=Health check AI Stock Analyzer Bot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/curl --fail --silent --show-error http://127.0.0.1:8000/ready
+ExecStartPost=/bin/true
+OnFailure=ai-stock-analyzer-restart.service

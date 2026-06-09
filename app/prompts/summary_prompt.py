@@ -17,18 +17,19 @@ Data saham:
 Hasil model:
 {json.dumps(results, ensure_ascii=False, indent=2)}
 
-Berikan output:
-📊 Ringkasan Gabungan AI
-
-🤖 Pendapat setiap AI:
-✅ Kesamaan Analisa:
-⚠️ Perbedaan Analisa:
-📉 Risiko Utama:
-📈 Peluang Utama:
-🎯 Sinyal Akhir:
-Pilih tepat satu: STRONG BUY, BUY, BUY ON WEAKNESS, BUY ON BREAKOUT, HOLD, WATCHLIST, AVOID.
-📌 Confidence Level:
-Low, Medium, atau High.
-
-Disclaimer:
-Ini bukan nasihat keuangan resmi. Gunakan sebagai referensi tambahan."""
+Kembalikan HANYA objek JSON valid tanpa markdown dengan struktur:
+{{
+  "stock_code": "{stock_data["stock"]["code"]}",
+  "trend": "kesamaan dan perbedaan trend",
+  "volume": "kesimpulan volume",
+  "technical": "kesimpulan teknikal gabungan",
+  "fundamental": "kesimpulan fundamental gabungan",
+  "sentiment": "kesimpulan sentimen gabungan",
+  "entry": "area entry",
+  "target": "target/resistance",
+  "cut_loss": "area cut loss",
+  "risks": ["risiko utama"],
+  "signal": "STRONG BUY|BUY|BUY ON WEAKNESS|BUY ON BREAKOUT|HOLD|WATCHLIST|AVOID",
+  "confidence": "Low|Medium|High",
+  "conclusion": "kesimpulan akhir dan perbedaan pendapat model"
+}}"""

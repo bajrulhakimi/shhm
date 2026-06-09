@@ -2,6 +2,7 @@ from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
 
@@ -28,8 +29,20 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+@retry(
+    stop=stop_after_attempt(settings.external_request_max_attempts),
+    wait=wait_exponential(multiplier=settings.external_request_backoff_seconds, max=30),
+    reraise=True,
+)
 def init_db() -> None:
-    from app.models import analysis, scan_result, stock, usage, user, watchlist  # noqa: F401
+    from app.models import (  # noqa: F401
+        analysis,
+        scan_job,
+        scan_result,
+        stock,
+        usage,
+        user,
+        watchlist,
+    )
 
     Base.metadata.create_all(bind=engine)
-

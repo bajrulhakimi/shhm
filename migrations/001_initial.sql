@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS analyses (
   stock_code VARCHAR(20) NOT NULL,
   provider VARCHAR(50) NOT NULL,
   raw_data JSON NOT NULL,
+  structured_result JSON NULL,
   ai_result TEXT NOT NULL,
   final_signal VARCHAR(50) NULL,
   confidence_level VARCHAR(20) NULL,
@@ -79,11 +80,32 @@ CREATE TABLE IF NOT EXISTS scan_results (
   final_signal VARCHAR(50) NULL,
   confidence_level VARCHAR(20) NULL,
   summary TEXT NOT NULL,
+  structured_result JSON NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_scan_results_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX ix_scan_results_user (user_id),
   INDEX ix_scan_results_group (group_name)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS scan_jobs (
+  id VARCHAR(36) PRIMARY KEY,
+  user_id INT NULL,
+  group_name VARCHAR(100) NOT NULL,
+  requested_limit INT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'queued',
+  total_stocks INT NOT NULL DEFAULT 0,
+  processed_stocks INT NOT NULL DEFAULT 0,
+  result JSON NULL,
+  error_message TEXT NULL,
+  started_at DATETIME NULL,
+  finished_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_scan_jobs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX ix_scan_jobs_user (user_id),
+  INDEX ix_scan_jobs_group (group_name),
+  INDEX ix_scan_jobs_status (status)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS usage_events (
@@ -95,4 +117,3 @@ CREATE TABLE IF NOT EXISTS usage_events (
   CONSTRAINT fk_usage_events_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX ix_usage_user_type_created (user_id, event_type, created_at)
 ) ENGINE=InnoDB;
-

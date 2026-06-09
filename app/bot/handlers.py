@@ -11,7 +11,7 @@ from app.exceptions import AppError
 from app.models.analysis import Analysis
 from app.models.watchlist import Watchlist
 from app.services.analysis_service import AnalysisService
-from app.services.scan_service import ScanService
+from app.services.scan_job_service import scan_job_service
 from app.services.user_service import UserService
 from app.utils.formatter import DISCLAIMER, split_telegram_message
 from app.utils.validators import normalize_stock_code
@@ -19,13 +19,13 @@ from app.utils.validators import normalize_stock_code
 logger = logging.getLogger(__name__)
 settings = get_settings()
 analysis_service = AnalysisService()
-scan_service = ScanService()
 
 HELP_TEXT = """Perintah AI Stock Analyzer:
 /analyze KODE - analisa satu saham
 /scan - scan sampel IHSG
 /scan_lq45, /scan_idx30, /scan_idx80
 /scan_jii, /scan_dividend, /scan_esg, /scan_all
+/scan_status JOB_ID - lihat progress atau hasil scan
 /watchlist - lihat watchlist
 /addwatch KODE - tambah watchlist
 /removewatch KODE - hapus watchlist
@@ -109,7 +109,13 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     try:
         with SessionLocal() as db:
             user = _user_from_update(db, update)
-            result = await scan_service.scan_group(db, group, user.id)
+            job = scan_job_service.submit(db, group, user.id)
+            job_id = job.id
+        await status.edit_text(f"Scan {group} masuk antrean. Job ID: {job_id}")
+        job = await scan_job_service.wait(job_id)
+        if job.status == "failed":
+            raise AppError(job.error_message or "Scan gagal dijalankan.")
+        result = job.result or {"results": [], "errors": [], "formatted": "Hasil scan kosong."}
         success_count = len(result["results"])
         error_count = len(result["errors"])
         await status.edit_text(
@@ -121,6 +127,33 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     except Exception:
         logger.exception("Unexpected Telegram scan error")
         await status.edit_text("Maaf, scan belum berhasil dijalankan. Coba lagi nanti.")
+
+
+async def scan_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.args:
+        await update.effective_message.reply_text("Format: /scan_status JOB_ID")
+        return
+    try:
+        with SessionLocal() as db:
+            user = _user_from_update(db, update)
+            job = scan_job_service.get(db, context.args[0])
+            if job.user_id and job.user_id != user.id:
+                raise AppError("Job scan tidak ditemukan.")
+            payload = scan_job_service.serialize(job)
+        if payload["status"] == "completed" and payload["result"]:
+            await _reply_long(update, payload["result"]["formatted"])
+            return
+        message = (
+            f"Job {payload['id']}\n"
+            f"Status: {payload['status']}\n"
+            f"Progress: {payload['processed_stocks']}/{payload['total_stocks']} "
+            f"({payload['progress_percent']}%)"
+        )
+        if payload["error_message"]:
+            message += f"\nError: {payload['error_message']}"
+        await update.effective_message.reply_text(message)
+    except AppError as exc:
+        await update.effective_message.reply_text(str(exc))
 
 
 async def watchlist_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

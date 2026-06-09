@@ -20,26 +20,20 @@ def build_analysis_prompt(data: dict) -> str:
 Data saham dan indikator (JSON):
 {json.dumps(data, ensure_ascii=False, indent=2, default=str)}
 
-Berikan hasil dengan format:
-
-📊 Analisa Saham {data["stock"]["code"]}
-
-💰 Harga:
-📈 Trend:
-📊 Volume:
-🧭 Analisa Teknikal:
-🏢 Analisa Fundamental:
-📰 Sentimen:
-🟢 Area Entry Potensial:
-🎯 Target / Resistance:
-🔴 Cut Loss:
-⚠️ Risiko:
-✅ Kesimpulan AI:
-Pilih tepat satu: BUY, BUY ON WEAKNESS, BUY ON BREAKOUT, HOLD, WATCHLIST, AVOID.
-
-📌 Confidence Level:
-Pilih tepat satu: Low, Medium, High.
-
-Disclaimer:
-Analisa ini bukan ajakan membeli atau menjual saham.
-Keputusan investasi tetap menjadi tanggung jawab pengguna."""
+Kembalikan HANYA objek JSON valid tanpa markdown dengan struktur:
+{{
+  "stock_code": "{data["stock"]["code"]}",
+  "price": "penjelasan harga dan perubahan",
+  "trend": "bullish/bearish/sideways/netral beserta alasan",
+  "volume": "penjelasan volume",
+  "technical": "analisa teknikal",
+  "fundamental": "analisa fundamental dan keterbatasan",
+  "sentiment": "analisa sentimen dan keterbatasan",
+  "entry": "area entry atau belum tersedia",
+  "target": "target/resistance atau belum tersedia",
+  "cut_loss": "area cut loss atau belum tersedia",
+  "risks": ["risiko utama"],
+  "signal": "BUY|BUY ON WEAKNESS|BUY ON BREAKOUT|HOLD|WATCHLIST|AVOID",
+  "confidence": "Low|Medium|High",
+  "conclusion": "kesimpulan ringkas"
+}}"""

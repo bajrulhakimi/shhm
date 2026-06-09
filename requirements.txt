@@ -11,3 +11,6 @@ pandas==2.2.3
 numpy==1.26.4
 python-dotenv==1.1.0
 cryptography==45.0.3
+tenacity==9.1.2
+alembic==1.16.1
+prometheus-client==0.22.1

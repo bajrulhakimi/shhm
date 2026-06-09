@@ -27,6 +27,7 @@ class AnalysisResponse(BaseModel):
     final_signal: str
     confidence_level: str
     result: str
+    structured_result: dict[str, Any]
     provider_errors: dict[str, str] = Field(default_factory=dict)
 
 

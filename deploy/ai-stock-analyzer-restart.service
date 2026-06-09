@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart AI Stock Analyzer Bot after failed health check
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl restart ai-stock-analyzer-bot.service

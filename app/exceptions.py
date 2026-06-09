@@ -17,3 +17,10 @@ class RateLimitError(AppError):
 class ConfigurationError(AppError):
     pass
 
+
+class ExternalServiceError(AppError):
+    pass
+
+
+class RetryableExternalError(ExternalServiceError):
+    pass

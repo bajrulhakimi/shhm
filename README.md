@@ -118,6 +118,12 @@ curl -X POST -H "Content-Type: application/json" -H "X-API-Key: secret" \
   -d '{"group_name":"LQ45","limit":10}' http://127.0.0.1:8000/scan
 ```
 
+Endpoint `/scan` mengembalikan HTTP `202` dan job ID. Pantau progress dengan:
+
+```bash
+curl -H "X-API-Key: secret" http://127.0.0.1:8000/scan/jobs/JOB_ID
+```
+
 Jalankan test:
 
 ```bash
@@ -198,7 +204,7 @@ waktu, dan rate limit tetap terkendali.
 ## Command Telegram
 
 `/start`, `/help`, `/analyze KODE`, `/scan`, `/scan_lq45`, `/scan_idx30`, `/scan_idx80`,
-`/scan_jii`, `/scan_dividend`, `/scan_esg`, `/scan_all`, `/watchlist`, `/addwatch KODE`,
+`/scan_jii`, `/scan_dividend`, `/scan_esg`, `/scan_all`, `/scan_status JOB_ID`, `/watchlist`, `/addwatch KODE`,
 `/removewatch KODE`, `/history`, `/settings`.
 
 ## Catatan Operasional
@@ -206,9 +212,108 @@ waktu, dan rate limit tetap terkendali.
 - `MAX_ANALYSIS_PER_DAY` dan `MAX_SCAN_PER_DAY` membatasi penggunaan per user Telegram.
 - `MAX_SCAN_STOCKS` membatasi jumlah saham yang diproses per request.
 - `SCAN_DELAY_SECONDS` memberi jeda antar saham untuk mengurangi risiko rate limit.
-- Sentimen/news masih placeholder; implementasikan sumber berita di `SentimentService`.
+- Berita tersedia jika `NEWS_API_KEY` diisi; tanpa key sistem menampilkan keterbatasan data.
 - Satu proses polling Telegram harus dijalankan. Jangan menyalakan beberapa replica dengan token
   yang sama kecuali mengganti integrasi menjadi webhook.
+
+## Production Hardening
+
+Versi ini memiliki retry exponential backoff untuk Yahoo Finance, AI provider, dan News API;
+output AI terstruktur dengan fallback aman; persistent scan queue; progress job; readiness;
+Prometheus metrics; Alembic; backup; serta health-check systemd.
+
+Konfigurasi opsional:
+
+```dotenv
+METRICS_ACCESS_KEY=secret-metrics
+NEWS_API_KEY=
+EXTERNAL_REQUEST_MAX_ATTEMPTS=3
+EXTERNAL_REQUEST_BACKOFF_SECONDS=1
+SCAN_WORKER_COUNT=1
+SCAN_JOB_RETENTION_DAYS=30
+STOCK_GROUPS_REMOTE_URL=
+ENABLE_SCHEDULED_GROUP_SYNC=false
+```
+
+News API bersifat opsional. Tanpa key, sistem tetap berjalan dan menyebutkan keterbatasan berita.
+Aksi korporasi/dividen dari Yahoo Finance digunakan jika tersedia.
+
+Endpoint operasional:
+
+- `/health`: liveness proses.
+- `/ready`: kesiapan database dan scan worker.
+- `/metrics`: metrik Prometheus, gunakan header `X-Metrics-Key`.
+- `/groups`: daftar grup aktif.
+- `/admin/groups/sync`: sinkronisasi grup dari `STOCK_GROUPS_REMOTE_URL`.
+
+Validasi atau sinkronisasi grup secara manual:
+
+```bash
+venv/bin/python scripts/manage.py validate-groups
+venv/bin/python scripts/manage.py sync-groups
+```
+
+### Telegram Webhook
+
+Polling cocok untuk satu instance. Untuk HTTPS dan beberapa replica, gunakan mode webhook:
+
+```dotenv
+TELEGRAM_MODE=webhook
+TELEGRAM_WEBHOOK_BASE_URL=https://stockbot.example.com
+TELEGRAM_WEBHOOK_SECRET=secret-random-kuat
+```
+
+Pasang contoh `deploy/nginx-ai-stock-analyzer.conf`, arahkan DNS, lalu aktifkan HTTPS menggunakan
+Certbot. Persistent scan worker memakai klaim job atomik agar beberapa replica tidak memproses job
+yang sama.
+
+### Backup dan Health Check
+
+Siapkan direktori backup:
+
+```bash
+sudo mkdir -p /var/backups/ai-stock-analyzer-bot
+sudo chown stockbot:stockbot /var/backups/ai-stock-analyzer-bot
+sudo cp deploy/ai-stock-analyzer-backup.* /etc/systemd/system/
+sudo cp deploy/ai-stock-analyzer-healthcheck.* /etc/systemd/system/
+sudo cp deploy/ai-stock-analyzer-restart.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ai-stock-analyzer-backup.timer
+sudo systemctl enable --now ai-stock-analyzer-healthcheck.timer
+```
+
+Uji backup dan smoke test:
+
+```bash
+sudo systemctl start ai-stock-analyzer-backup.service
+sudo -u stockbot venv/bin/python scripts/smoke_test.py
+sudo -u stockbot venv/bin/python scripts/smoke_test.py --with-ai
+```
+
+Opsi `--with-ai` melakukan satu request AI yang mungkin dikenakan biaya.
+
+Restore salah satu backup:
+
+```bash
+gunzip -c /var/backups/ai-stock-analyzer-bot/stockbot-TIMESTAMP.sql.gz | \
+  mysql -u stockbot -p stockbot
+```
+
+## Upgrade VPS Tanpa Menghapus Data
+
+```bash
+cd /var/www/ai-stock-analyzer-bot
+sudo systemctl stop ai-stock-analyzer-bot
+sudo -u stockbot git pull
+sudo -u stockbot venv/bin/pip install -r requirements.txt
+sudo -u stockbot venv/bin/alembic upgrade head
+sudo cp deploy/ai-stock-analyzer-bot.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl start ai-stock-analyzer-bot
+curl --fail http://127.0.0.1:8000/ready
+```
+
+Alembic menambahkan tabel/kolom baru tanpa menghapus analisa, watchlist, atau hasil scan lama.
 
 ## Troubleshooting MySQL Ubuntu
 
@@ -232,6 +337,7 @@ Ubah `.env` agar memakai user tersebut dan matikan debug untuk produksi:
 ```dotenv
 APP_ENV=production
 APP_DEBUG=false
+ENABLE_API_DOCS=false
 DATABASE_URL=mysql+pymysql://stockbot:PASSWORD_DARI_PERINTAH_DI_ATAS@localhost:3306/stockbot?charset=utf8mb4
 ```
 

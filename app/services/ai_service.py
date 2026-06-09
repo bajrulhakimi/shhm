@@ -12,7 +12,7 @@ from app.services.claude_provider import ClaudeProvider
 from app.services.deepseek_provider import DeepSeekProvider
 from app.services.gemini_provider import GeminiProvider
 from app.services.openai_provider import OpenAIProvider
-from app.utils.formatter import ensure_disclaimer, extract_confidence, extract_signal
+from app.services.structured_result_service import StructuredResultService
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,16 @@ class AIService:
         self._default_provider()
 
     @staticmethod
+    def parse_result(text: str, stock_code: str) -> dict[str, Any]:
+        structured = StructuredResultService.parse(text, stock_code)
+        return {
+            "text": StructuredResultService.render(structured),
+            "structured": StructuredResultService.as_dict(structured),
+            "final_signal": structured.signal,
+            "confidence_level": structured.confidence,
+        }
+
+    @staticmethod
     def _compact_data(data: dict[str, Any]) -> dict[str, Any]:
         return {key: value for key, value in data.items() if key != "history"}
 
@@ -57,14 +67,12 @@ class AIService:
         if quick:
             provider = self._default_provider()
             text = await provider.generate(SYSTEM_PROMPT, build_scan_prompt(compact))
-            text = ensure_disclaimer(text)
-            return self._result(provider.name, text, {provider.name: text})
+            return self._result(provider.name, text, {provider.name: text}, compact)
 
         if not self.settings.enable_multi_ai:
             provider = self._default_provider()
             text = await provider.generate(SYSTEM_PROMPT, build_analysis_prompt(compact))
-            text = ensure_disclaimer(text)
-            return self._result(provider.name, text, {provider.name: text})
+            return self._result(provider.name, text, {provider.name: text}, compact)
 
         if not self.providers:
             raise ConfigurationError(
@@ -80,7 +88,7 @@ class AIService:
         errors: dict[str, str] = {}
         for name, task in tasks.items():
             try:
-                individual[name] = ensure_disclaimer(await task)
+                individual[name] = await task
             except AIProviderError as exc:
                 logger.warning("AI provider %s failed: %s", name, exc)
                 errors[name] = str(exc)
@@ -95,21 +103,28 @@ class AIService:
                 SUMMARY_SYSTEM_PROMPT,
                 build_summary_prompt(compact, individual),
             )
-            final_text = ensure_disclaimer(final_text)
             provider_name = f"multi-ai:{summarizer.name}"
         except AIProviderError:
             first_name, final_text = next(iter(individual.items()))
             provider_name = f"multi-ai-fallback:{first_name}"
-        result = self._result(provider_name, final_text, individual)
+        result = self._result(provider_name, final_text, individual, compact)
         result["provider_errors"] = errors
         return result
 
     @staticmethod
-    def _result(provider: str, text: str, individual: dict[str, str]) -> dict[str, Any]:
+    def _result(
+        provider: str,
+        text: str,
+        individual: dict[str, str],
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        structured = StructuredResultService.parse(text, data["stock"]["code"])
         return {
             "provider": provider,
-            "text": text,
+            "text": StructuredResultService.render(structured),
+            "raw_text": text,
+            "structured": StructuredResultService.as_dict(structured),
             "individual_results": individual,
-            "final_signal": extract_signal(text) or "WATCHLIST",
-            "confidence_level": extract_confidence(text) or "Low",
+            "final_signal": structured.signal,
+            "confidence_level": structured.confidence,
         }

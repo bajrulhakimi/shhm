@@ -16,6 +16,7 @@ class Analysis(TimestampMixin, Base):
     stock_code: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     raw_data: Mapped[dict] = mapped_column(JSON, nullable=False)
+    structured_result: Mapped[dict | None] = mapped_column(JSON)
     ai_result: Mapped[str] = mapped_column(Text, nullable=False)
     final_signal: Mapped[str | None] = mapped_column(String(50), index=True)
     confidence_level: Mapped[str | None] = mapped_column(String(20))

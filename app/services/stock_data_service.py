@@ -4,9 +4,11 @@ from typing import Any
 
 import pandas as pd
 import yfinance as yf
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
 from app.exceptions import StockDataError
+from app.monitoring import STOCK_DATA_REQUESTS
 from app.services.fundamental_service import FundamentalService
 from app.services.technical_indicator_service import TechnicalIndicatorService
 from app.utils.formatter import finite_or_none
@@ -22,14 +24,29 @@ class StockDataService:
         normalized = normalize_stock_code(code)
         cached = self._cache.get(normalized)
         if cached and time.monotonic() - cached[0] < self.settings.stock_data_cache_seconds:
+            STOCK_DATA_REQUESTS.labels("cache_hit").inc()
             data = dict(cached[1])
             data["groups"] = groups or data.get("groups", [])
             return data
-        data = await asyncio.to_thread(self._fetch_sync, normalized, groups or [])
+        try:
+            data = await asyncio.to_thread(self._fetch_sync, normalized, groups or [])
+            STOCK_DATA_REQUESTS.labels("success").inc()
+        except StockDataError:
+            STOCK_DATA_REQUESTS.labels("error").inc()
+            raise
         self._cache[normalized] = (time.monotonic(), data)
         return data
 
     @staticmethod
+    @retry(
+        stop=stop_after_attempt(get_settings().external_request_max_attempts),
+        wait=wait_exponential(
+            multiplier=get_settings().external_request_backoff_seconds,
+            min=get_settings().external_request_backoff_seconds,
+            max=30,
+        ),
+        reraise=True,
+    )
     def _fetch_sync(code: str, groups: list[str]) -> dict[str, Any]:
         ticker = yf.Ticker(yahoo_symbol(code))
         try:
@@ -37,11 +54,18 @@ class StockDataService:
             if history.empty or len(history) < 20:
                 raise StockDataError(f"Data saham {code} tidak ditemukan atau belum memadai.")
             history = history.dropna(subset=["Close"])
-            info = ticker.info or {}
         except StockDataError:
             raise
         except Exception as exc:
             raise StockDataError(f"Data saham {code} belum berhasil diambil.") from exc
+        try:
+            info = ticker.info or {}
+        except Exception:
+            info = {}
+        try:
+            actions = ticker.actions.tail(10)
+        except Exception:
+            actions = pd.DataFrame()
 
         technical = TechnicalIndicatorService.calculate(history)
         last = history.iloc[-1]
@@ -76,6 +100,7 @@ class StockDataService:
             "groups": groups,
             "technical": technical,
             "fundamental": FundamentalService.from_yahoo_info(info),
+            "corporate_actions": StockDataService._action_records(actions),
             "history": StockDataService._history_records(history.tail(250)),
         }
 
@@ -93,4 +118,20 @@ class StockDataService:
                     "volume": finite_or_none(row.get("Volume")),
                 }
             )
+        return records
+
+    @staticmethod
+    def _action_records(actions: pd.DataFrame) -> list[dict[str, Any]]:
+        records: list[dict[str, Any]] = []
+        for index, row in actions.iterrows():
+            dividends = finite_or_none(row.get("Dividends")) or 0
+            stock_splits = finite_or_none(row.get("Stock Splits")) or 0
+            if dividends or stock_splits:
+                records.append(
+                    {
+                        "date": index.strftime("%Y-%m-%d"),
+                        "dividends": dividends,
+                        "stock_splits": stock_splits,
+                    }
+                )
         return records

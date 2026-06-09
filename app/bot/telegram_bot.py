@@ -9,6 +9,7 @@ from app.bot.handlers import (
     history_command,
     removewatch_command,
     scan_command,
+    scan_status_command,
     settings_command,
     start,
     watchlist_command,
@@ -22,6 +23,7 @@ def build_telegram_application(token: str) -> Application:
     application.add_handler(CommandHandler("analyze", analyze_command))
     for command in SCAN_COMMANDS:
         application.add_handler(CommandHandler(command, scan_command))
+    application.add_handler(CommandHandler("scan_status", scan_status_command))
     application.add_handler(CommandHandler("watchlist", watchlist_command))
     application.add_handler(CommandHandler("addwatch", addwatch_command))
     application.add_handler(CommandHandler("removewatch", removewatch_command))
@@ -29,4 +31,3 @@ def build_telegram_application(token: str) -> Application:
     application.add_handler(CommandHandler("settings", settings_command))
     application.add_error_handler(error_handler)
     return application
-

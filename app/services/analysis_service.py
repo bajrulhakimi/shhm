@@ -10,7 +10,6 @@ from app.services.group_service import GroupService
 from app.services.sentiment_service import SentimentService
 from app.services.stock_data_service import StockDataService
 from app.services.usage_service import UsageService
-from app.utils.formatter import extract_confidence, extract_signal
 from app.utils.validators import normalize_stock_code
 
 
@@ -40,19 +39,22 @@ class AnalysisService:
         data["sentiment"] = await self.sentiment.get_sentiment(
             normalized,
             data["stock"].get("sector"),
+            data.get("corporate_actions"),
         )
         ai_result = await self.ai.analyze(data)
         self._upsert_stock(db, data["stock"])
         for provider, result in ai_result["individual_results"].items():
+            provider_structured = self.ai.parse_result(result, normalized)
             db.add(
                 Analysis(
                     user_id=user_id,
                     stock_code=normalized,
                     provider=provider,
                     raw_data=data,
-                    ai_result=result,
-                    final_signal=extract_signal(result) or "WATCHLIST",
-                    confidence_level=extract_confidence(result) or "Low",
+                    structured_result=provider_structured["structured"],
+                    ai_result=provider_structured["text"],
+                    final_signal=provider_structured["final_signal"],
+                    confidence_level=provider_structured["confidence_level"],
                 )
             )
         if len(ai_result["individual_results"]) > 1:
@@ -62,6 +64,7 @@ class AnalysisService:
                     stock_code=normalized,
                     provider=ai_result["provider"],
                     raw_data=data,
+                    structured_result=ai_result["structured"],
                     ai_result=ai_result["text"],
                     final_signal=ai_result["final_signal"],
                     confidence_level=ai_result["confidence_level"],

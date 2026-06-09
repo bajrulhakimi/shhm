@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import JSON, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -18,5 +18,6 @@ class ScanResult(TimestampMixin, Base):
     final_signal: Mapped[str | None] = mapped_column(String(50), index=True)
     confidence_level: Mapped[str | None] = mapped_column(String(20))
     summary: Mapped[str] = mapped_column(Text, nullable=False)
+    structured_result: Mapped[dict | None] = mapped_column(JSON)
 
     user = relationship("User", back_populates="scan_results")

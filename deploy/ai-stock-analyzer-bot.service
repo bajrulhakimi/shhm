@@ -9,12 +9,17 @@ User=stockbot
 Group=stockbot
 WorkingDirectory=/var/www/ai-stock-analyzer-bot
 EnvironmentFile=/var/www/ai-stock-analyzer-bot/.env
+ExecStartPre=/var/www/ai-stock-analyzer-bot/venv/bin/alembic upgrade head
 ExecStart=/var/www/ai-stock-analyzer-bot/venv/bin/python run.py
 Restart=always
 RestartSec=5
 PrivateTmp=true
 NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/ai-stock-analyzer-bot/app/data
+RestrictSUIDSGID=true
+LockPersonality=true
 
 [Install]
 WantedBy=multi-user.target
-

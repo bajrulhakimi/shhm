@@ -1,0 +1,13 @@
+[Unit]
+Description=Backup AI Stock Analyzer MySQL database
+After=mysql.service
+
+[Service]
+Type=oneshot
+User=stockbot
+Group=stockbot
+WorkingDirectory=/var/www/ai-stock-analyzer-bot
+EnvironmentFile=/var/www/ai-stock-analyzer-bot/.env
+ExecStart=/var/www/ai-stock-analyzer-bot/venv/bin/python scripts/backup_mysql.py
+PrivateTmp=true
+NoNewPrivileges=true
