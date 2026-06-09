@@ -210,6 +210,38 @@ waktu, dan rate limit tetap terkendali.
 - Satu proses polling Telegram harus dijalankan. Jangan menyalakan beberapa replica dengan token
   yang sama kecuali mengganti integrasi menjadi webhook.
 
+## Troubleshooting MySQL Ubuntu
+
+Jika startup gagal dengan pesan `Access denied for user 'root'@'localhost'`, aplikasi masih
+menggunakan akun MySQL `root`. Pada Ubuntu, akun tersebut biasanya memakai autentikasi socket dan
+tidak dapat dipakai oleh PyMySQL. Buat akun aplikasi khusus:
+
+```bash
+DB_PASSWORD="$(openssl rand -hex 24)"
+echo "Simpan password database ini: $DB_PASSWORD"
+sudo mysql --execute="
+CREATE DATABASE IF NOT EXISTS stockbot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'stockbot'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
+ALTER USER 'stockbot'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
+GRANT ALL PRIVILEGES ON stockbot.* TO 'stockbot'@'localhost';
+FLUSH PRIVILEGES;"
+```
+
+Ubah `.env` agar memakai user tersebut dan matikan debug untuk produksi:
+
+```dotenv
+APP_ENV=production
+APP_DEBUG=false
+DATABASE_URL=mysql+pymysql://stockbot:PASSWORD_DARI_PERINTAH_DI_ATAS@localhost:3306/stockbot?charset=utf8mb4
+```
+
+Uji kredensial sebelum menjalankan aplikasi:
+
+```bash
+mysql -u stockbot -p -e "SELECT 1;" stockbot
+sudo -u stockbot venv/bin/python -c "from app.database import engine; c=engine.connect(); print('Database OK'); c.close()"
+```
+
 ## Disclaimer
 
 Seluruh hasil hanya untuk edukasi dan referensi tambahan. Aplikasi tidak memberikan kepastian

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     app_port: int = 8000
     api_access_key: str | None = None
 
-    database_url: str = "mysql+pymysql://root:password@localhost:3306/stockbot?charset=utf8mb4"
+    database_url: str = "mysql+pymysql://stockbot:password@localhost:3306/stockbot?charset=utf8mb4"
     telegram_bot_token: str | None = None
 
     openai_api_key: str | None = None
