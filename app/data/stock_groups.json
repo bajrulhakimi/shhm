@@ -1,0 +1,38 @@
+{
+  "IHSG": {
+    "description": "Sampel saham besar IHSG. Perbarui daftar ini sesuai kebutuhan.",
+    "stocks": ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNVR", "ICBP", "INDF", "GOTO", "ANTM", "ADRO", "AMRT", "KLBF", "PTBA"]
+  },
+  "LQ45": {
+    "description": "Sampel konstituen LQ45.",
+    "stocks": ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNVR", "ICBP", "INDF", "MDKA", "ANTM", "INCO", "ADRO", "AMRT", "CPIN", "GOTO", "EMTK", "KLBF", "PGAS", "PTBA"]
+  },
+  "IDX30": {
+    "description": "Sampel konstituen IDX30.",
+    "stocks": ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNVR", "ICBP", "INDF", "ADRO", "ANTM", "MDKA", "INCO", "AMRT", "CPIN", "KLBF", "PTBA", "PGAS", "GOTO", "EMTK"]
+  },
+  "IDX80": {
+    "description": "Sampel 80 saham; komposisi dapat diedit admin.",
+    "stocks": ["ACES", "ADMR", "ADRO", "AKRA", "AMRT", "ANTM", "ARTO", "ASII", "AVIA", "BBCA", "BBNI", "BBRI", "BBTN", "BMRI", "BRIS", "BRPT", "BUKA", "CPIN", "CTRA", "EMTK", "ERAA", "ESSA", "EXCL", "GGRM", "GOTO", "HEAL", "HMSP", "HRUM", "ICBP", "INCO", "INDF", "INKP", "INTP", "ISAT", "ITMG", "JPFA", "JSMR", "KLBF", "MAPI", "MDKA", "MEDC", "MIKA", "MNCN", "MTEL", "MYOR", "PGAS", "PGEO", "PTBA", "PWON", "SIDO", "SMGR", "SMRA", "SRTG", "TBIG", "TINS", "TKIM", "TLKM", "TOWR", "TPIA", "UNTR", "UNVR", "WIKA", "AUTO", "BBKP", "BJBR", "BJTM", "BRMS", "BSDE", "CMRY", "DSNG", "ELSA", "ENRG", "INDY", "LSIP", "MAPA", "NCKL", "RAJA", "SCMA", "ULTJ", "BFIN"]
+  },
+  "KOMPAS100": {
+    "description": "Sampel Kompas100 yang mudah diedit.",
+    "stocks": ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "ICBP", "INDF", "UNVR", "ADRO", "ANTM", "AMRT", "BRIS", "CPIN", "GOTO", "INCO", "KLBF", "MDKA", "PGAS", "PTBA", "UNTR", "EXCL", "ISAT", "MEDC", "TPIA"]
+  },
+  "JII": {
+    "description": "Sampel konstituen Jakarta Islamic Index.",
+    "stocks": ["ACES", "ADRO", "AKRA", "ANTM", "BRIS", "CPIN", "EXCL", "ICBP", "INCO", "INDF", "INTP", "KLBF", "MDKA", "PGAS", "PTBA", "TLKM", "TPIA", "UNTR", "UNVR"]
+  },
+  "DIVIDEND": {
+    "description": "Sampel IDX High Dividend 20.",
+    "stocks": ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "ADRO", "PTBA", "UNTR", "ITMG", "INDF", "ICBP", "INTP", "KLBF", "PGAS"]
+  },
+  "ESG": {
+    "description": "Sampel IDX ESG Leaders.",
+    "stocks": ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNVR", "KLBF", "INDF", "ICBP"]
+  },
+  "MSCI_INDONESIA": {
+    "description": "Sampel MSCI Indonesia.",
+    "stocks": ["BBCA", "BBRI", "BMRI", "TLKM", "ASII", "BBNI", "GOTO", "AMRT", "MDKA", "ADRO", "ANTM", "INCO", "UNTR"]
+  }
+}
