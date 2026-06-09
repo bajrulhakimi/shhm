@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.analysis import Analysis
 from app.models.stock import Stock
 from app.services.ai_service import AIService
+from app.services.conclusion_summary_service import ConclusionSummaryService
 from app.services.group_service import GroupService
 from app.services.sentiment_service import SentimentService
 from app.services.stock_data_service import StockDataService
@@ -42,9 +43,19 @@ class AnalysisService:
             data.get("corporate_actions"),
         )
         ai_result = await self.ai.analyze(data)
+        conclusion_summary = ConclusionSummaryService.build(data)
+        ai_result["structured"]["quantitative_summary"] = conclusion_summary
+        ai_result["text"] = (
+            "📌 Ringkasan Kesimpulan\n"
+            f"{ConclusionSummaryService.render(conclusion_summary)}\n\n"
+            f"{ai_result['text']}"
+        )
         self._upsert_stock(db, data["stock"])
+        single_provider = len(ai_result["individual_results"]) == 1
         for provider, result in ai_result["individual_results"].items():
-            provider_structured = self.ai.parse_result(result, normalized)
+            provider_structured = (
+                ai_result if single_provider else self.ai.parse_result(result, normalized)
+            )
             db.add(
                 Analysis(
                     user_id=user_id,

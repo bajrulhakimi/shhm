@@ -13,6 +13,7 @@ beberapa model AI untuk membuat analisa edukatif. Hasil analisa dan scan disimpa
 - Scan grup IHSG, LQ45, IDX30, IDX80, JII, High Dividend, ESG, dan seluruh daftar.
 - Provider OpenAI, Gemini, Claude, dan DeepSeek; provider tanpa API key dilewati.
 - Multi-AI paralel dan kesimpulan gabungan.
+- Ringkasan kuantitatif analisa tunggal: skor 0-100, sinyal tren, entry, SL, target, dan RR.
 - MA5/20/50/100/200, RSI14, MACD, support/resistance, 52-week range, volume ratio.
 - Fundamental Yahoo Finance dan struktur sentimen yang siap dihubungkan ke News API.
 - Watchlist, history, batas penggunaan harian, cache data, dan error handling.
